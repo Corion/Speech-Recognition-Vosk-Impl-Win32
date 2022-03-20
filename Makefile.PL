@@ -3,7 +3,6 @@
 use strict;
 use ExtUtils::MakeMaker qw(WriteMakefile);
 use File::Basename 'dirname';
-use File::Copy 'cp';
 use File::ShareDir::Install;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
@@ -13,38 +12,17 @@ use File::ShareDir::Install;
 my $eumm_version = $ExtUtils::MakeMaker::VERSION;
 $eumm_version =~ s/_//;
 
-my $module = 'Speech::Recognition::Vosk';
+my $module = 'Speech::Recognition::Vosk::Impl::Win32';
 (my $main_file = "lib/$module.pm" ) =~ s!::!/!g;
 (my $distbase = $module) =~ s!::!-!g;
 my $distlink = $distbase;
 
 my @tests = map { glob $_ } 't/*.t', 't/*/*.t';
 
-my $vosk_src = $ENV{VOSK_SRC} || (dirname($0). "/build/vosk-api/src");
-my $load_dll = ($^O eq 'MSWin32' && ! $ENV{VOSK_SRC});
-my $build    =    (! -d $vosk_src && ! $load_dll)
-               || $ENV{VOSK_BUILD}
-               ;
+my $load_dll = 1;
 
-my (@ffi_stuff, @build_requires, @LIBS, $XS);
-if( !$load_dll ) {
-    print "Will download and compile Vosk\n";
-    @ffi_stuff = (        'XSLoader'           => 0 );
-    @build_requires = (
-        'File::Basename'      => 0,
-        'ExtUtils::MakeMaker' => 0,
-        'Alien::cmake3'       => 0,
-    );
-    @LIBS = (LIBS => "-L${vosk_src} -lvosk -ldl -lpthread -Wl,-rpath=${vosk_src}" );
-    cp( 'Vosk.xs.in' => 'Vosk.xs' );
-    $XS = {'Vosk.xs' => 'Vosk.c' };
-} elsif( $load_dll ) {
-    print "Will use prebuilt Win32 DLL\n";
-    @ffi_stuff = (        'Win32::API'         => 0 );
-    @build_requires = ();
-    $XS = {};
-    install_share('vosk-win64-0.3.32');
-}
+print "Will use prebuilt Win32 DLL\n";
+install_share('vosk-win64-0.3.32');
 
 # Don't rebuild for a CPAN release
 $build = $build && ! $ENV{CPAN_RELEASE};
@@ -81,21 +59,14 @@ my %module = (
         @build_requires,
     },
 
-    @LIBS,
-    XS => $XS,
-
     CONFIGURE_REQUIRES => {
         "File::ShareDir::Install" => 0,
     },
 
     PREREQ_PM => {
         'Exporter'           => 5, # for 'import'
-
-        @ffi_stuff,
-
+        'Win32::API'         => 0,
         'Filter::signatures' => '0.09',
-        'Moo'                => 2, # for some hashes-as-objects
-        'JSON'               => 0,
     },
     TEST_REQUIRES => {
         'Test::More'   => 0,
