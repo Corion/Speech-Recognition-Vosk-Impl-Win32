@@ -1,18 +1,17 @@
-#!perl
+package Speech::Recognition::Vosk::Impl::Win32;
 use strict;
 use 5.012;
 use File::Basename 'dirname';
 use Win32::API;
-require Exporter;
+use Exporter 'import';
 use File::ShareDir 'dist_dir';
 
 # We want to load the DLLs from here:
 sub load_libvosk {
     my ($path) = @_;
-    $path //= dist_dir('Speech::Recognition::Vosk');
+    $path //= dist_dir('Speech::Recognition::Vosk::Impl::Win32');
     local $ENV{PATH} .= ";" . $path;
 
-    #our $model_new = Win32::API->new("libvosk.dll", "vosk_model_new", "P", "N")
     Win32::API::More->Import("libvosk.dll", "vosk_model_new", "P", "N")
         or die $^E;
 
@@ -36,18 +35,15 @@ sub load_libvosk {
 }
 
 our @EXPORT_OK = (qw(
-    vosk_model_new
-    vosk_model_find_word
-    vosk_model_recognizer_new
-    vosk_model_recognizer_accept_waveform
-    vosk_model_recognizer_partial_result
-    vosk_model_recognizer_result
-    vosk_model_recognizer_final_result
+    model_new
+    model_find_word
+    model_recognizer_new
+    model_recognizer_accept_waveform
+    model_recognizer_partial_result
+    model_recognizer_result
+    model_recognizer_final_result
 ));
 
-sub import {
-    load_libvosk();
-    goto &Exporter::import;
-};
+load_libvosk();
 
 1;
